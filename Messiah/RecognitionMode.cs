@@ -19,5 +19,17 @@ namespace Messiah
             RequiredConfidence = confidence;
             ModeGrammar = new Grammar(new GrammarBuilder(new Choices(phrases)));
         }
+
+        public RecognitionMode(int id, double confidence, string[] chars, params string[] phrases)
+        {
+            ModeID = id;
+            RequiredConfidence = confidence;
+
+            Choices choi = new Choices();
+            choi.Add(chars);
+            choi.Add(phrases);
+
+            ModeGrammar = new Grammar(new GrammarBuilder(choi));
+        }
     }
 }
