@@ -11,25 +11,27 @@ namespace Messiah
     {
         public int ModeID;
         public double RequiredConfidence;
-        public Grammar ModeGrammar;
+        public string[] Phrases;
 
         public RecognitionMode(int id, double confidence, params string[] phrases)
         {
             ModeID = id;
             RequiredConfidence = confidence;
-            ModeGrammar = new Grammar(new GrammarBuilder(new Choices(phrases)));
+            Phrases = phrases;
         }
 
-        public RecognitionMode(int id, double confidence, string[] chars, params string[] phrases)
+        /// <summary>
+        /// Adds more phrases into the string array Phrases.
+        /// New phrases are added after already existing phrases.
+        /// </summary>
+        /// <param name="phrases">phrases to be added</param>
+        public void AddPhrases(params string[] phrases)
         {
-            ModeID = id;
-            RequiredConfidence = confidence;
+            int oldLen = Phrases.Length;
+            Array.Resize(ref Phrases, oldLen + phrases.Length);
 
-            Choices choi = new Choices();
-            choi.Add(chars);
-            choi.Add(phrases);
-
-            ModeGrammar = new Grammar(new GrammarBuilder(choi));
+            for(int i = 0; i < phrases.Length; i++)
+                Phrases[oldLen + i] = phrases[i];
         }
     }
 }
