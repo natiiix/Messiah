@@ -126,7 +126,8 @@ namespace Messiah
         private void Recognizer_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
         {
             // FOR DEBUGGING PURPOSES
-            Display("Confidence: " + e.Result.Confidence.ToString() + Environment.NewLine +
+            Display("Mode: " + mode.ToString() + Environment.NewLine +
+                    "Confidence: " + e.Result.Confidence.ToString() + Environment.NewLine +
                     "Text: " + e.Result.Text);
 
             // If the required confirence was met, process the input text

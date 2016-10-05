@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Messiah" Height="200" Width="300" Loaded="Window_Loaded" Closing="Window_Closing" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" SizeToContent="WidthAndHeight" ResizeMode="CanMinimize">
     <Grid Background="#FF404040">
-        <TextBox x:Name="textBoxInput" HorizontalAlignment="Left" Height="149" Margin="10,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="272" Background="#FF3A3A3A" BorderBrush="#FF323232" Foreground="White" IsReadOnly="True"/>
+        <TextBox x:Name="textBoxInput" HorizontalAlignment="Left" Height="149" Margin="10" TextWrapping="Wrap" VerticalAlignment="Top" Width="272" Background="#FF3A3A3A" BorderBrush="#FF323232" Foreground="White" IsReadOnly="True"/>
 
     </Grid>
 </Window>
