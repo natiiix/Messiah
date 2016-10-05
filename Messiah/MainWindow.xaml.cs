@@ -19,17 +19,38 @@ namespace Messiah
         private const int MODE_WORDS = 3;
         #endregion
         #region Actions
-        private MessiahAction ACTION_NULL = null;
         private MessiahAction ACTION_STOP_LISTENING     = new MessiahAction(1, "stop listening");                           // Switch to MODE_IDLE
         private MessiahAction ACTION_START_LISTENING    = new MessiahAction(2, "start listening");                          // Switch back to MODE_BROWSER
-        private MessiahAction ACTION_DICTATE_CHARACTERS = new MessiahAction(3, "dictate characters", "dictate letters");    // Switch to MODE_CHARACTERS
-        private MessiahAction ACTION_DICTATE_WORDS      = new MessiahAction(4, "start dictating", "dictate", "dictate words", "dictate sentences"); // Switch to MODE_WORDS
+        private MessiahAction ACTION_DICTATE_CHARACTERS = new MessiahAction(3, "dictate", "dictate characters");            // Switch to MODE_CHARACTERS
+        private MessiahAction ACTION_DICTATE_WORDS      = new MessiahAction(4, "dictate words", "dictate sentences");       // Switch to MODE_WORDS
         private MessiahAction ACTION_STOP_DICTATING     = new MessiahAction(5, "stop dictating");                           // Switch back to MODE_BROWSER
-        private MessiahAction ACTION_ENTER              = new MessiahAction(6, "new line", "enter", "return", "confirm");   // Press enter
 
-        private MessiahAction ACTION_BACKSPACE          = new MessiahAction(201, "backspace");                              // Press backspace
+        private MessiahAction ACTION_ENTER              = new MessiahAction(21, "enter", "confirm");                        // Enter
+        private MessiahAction ACTION_BACKSPACE          = new MessiahAction(22, "backspace");                               // Backspace
+        private MessiahAction ACTION_DELETE             = new MessiahAction(23, "delete");                                  // Delete
+        private MessiahAction ACTION_SELECT_ALL         = new MessiahAction(24, "select all");                              // Ctrl+A
+        private MessiahAction ACTION_DELETE_ALL         = new MessiahAction(25, "delete all");                              // Ctrl+A and Delete
 
-        private MessiahAction ACTION_DELETE_LAST        = new MessiahAction(301, "delete last", "delete recent");           // Deletes the most recently written word
+        private MessiahAction ACTION_LEFT               = new MessiahAction(31, "left");                                    // Press left arrow
+        private MessiahAction ACTION_RIGHT              = new MessiahAction(32, "right");                                   // Press right arrow
+        private MessiahAction ACTION_UP                 = new MessiahAction(33, "up");                                      // Press up arrow
+        private MessiahAction ACTION_DOWN               = new MessiahAction(34, "down");                                    // Press down arrow
+
+        private MessiahAction ACTION_ELEMENT_PREVIOUS   = new MessiahAction(101, "select previous", "previous element");    // Focus previous element
+        private MessiahAction ACTION_ELEMENT_NEXT       = new MessiahAction(102, "select next", "next element");            // Focus next element
+        private MessiahAction ACTION_PAGE_BACK          = new MessiahAction(103, "page back", "go back", "previous page");  // Go to the previous page
+        private MessiahAction ACTION_PAGE_FORWARD       = new MessiahAction(104, "page forward", "go forward", "next page");// Go to the next page
+        private MessiahAction ACTION_START_BROWSER      = new MessiahAction(105, "open browser", "start browser");          // Open new browser window
+        private MessiahAction ACTION_TAB_NEW            = new MessiahAction(106, "new tab", "open new tab");                // Open new tab
+        private MessiahAction ACTION_TAB_CLOSE          = new MessiahAction(107, "close tab", "close active tab");          // Close active tab
+        private MessiahAction ACTION_TAB_REOPEN         = new MessiahAction(108, "reopen tab", "open last closed tab");     // Open the most recently closed tab
+        private MessiahAction ACTION_TAB_PREVIOUS       = new MessiahAction(109, "previous tab", "switch to previous tab"); // Open the most recently closed tab
+        private MessiahAction ACTION_TAB_NEXT           = new MessiahAction(110, "next tab", "switch to next tab", "switch tab"); // Open the most recently closed tab
+        private MessiahAction ACTION_RELOAD_PAGE        = new MessiahAction(111, "reload page", "refresh page");            // Reload the page in active tab
+        private MessiahAction ACTION_SCROLL_UP          = new MessiahAction(112, "scroll up", "scroll up");                 // Scroll the page up
+        private MessiahAction ACTION_SCROLL_DOWN        = new MessiahAction(113, "scroll down", "page down");               // Scroll the page down
+
+        private MessiahAction ACTION_DELETE_LAST        = new MessiahAction(301, "delete last", "delete recent");           // Delete the most recently written word
         #endregion
         #region Characters
         private Character[] CHARACTERS = new Character[] {
@@ -67,9 +88,10 @@ namespace Messiah
         #endregion
         #endregion
         #region Variables
-        private RecognitionMode[] modes = new RecognitionMode[4];
-        private int mode = 0;
         private SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
+        private RecognitionMode[] modes = new RecognitionMode[4];
+        private int mode = -1;
+        private int lastWordLength = 0;
         #endregion
 
         #region Window Events
@@ -85,7 +107,7 @@ namespace Messiah
             recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
 
             PrepareModes();
-            LoadRecognitionMode(MODE_BROWSER);
+            LoadRecognitionMode(MODE_IDLE);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -119,15 +141,28 @@ namespace Messiah
         /// </summary>
         private void PrepareModes()
         {
+            #region BROWSER
             modes[MODE_BROWSER] = new RecognitionMode(MODE_BROWSER, 0.9);
             AddAction(MODE_BROWSER,
-                            ACTION_STOP_LISTENING,
                             ACTION_DICTATE_CHARACTERS,
                             ACTION_DICTATE_WORDS,
-                            ACTION_ENTER
-                            );
 
-            #region MODE_CHARACTERS
+                            ACTION_ELEMENT_PREVIOUS,
+                            ACTION_ELEMENT_NEXT,
+                            ACTION_PAGE_BACK,
+                            ACTION_PAGE_FORWARD,
+                            ACTION_START_BROWSER,
+                            ACTION_TAB_NEW,
+                            ACTION_TAB_CLOSE,
+                            ACTION_TAB_REOPEN,
+                            ACTION_TAB_PREVIOUS,
+                            ACTION_TAB_NEXT,
+                            ACTION_RELOAD_PAGE,
+                            ACTION_SCROLL_DOWN,
+                            ACTION_SCROLL_UP
+                            );
+            #endregion
+            #region CHARACTERS
             int specialCharsLen = CHARACTERS.Length;
             const int standardCharsLen = 62;
             const int lettersLen = 26;
@@ -156,22 +191,38 @@ namespace Messiah
             { modes[MODE_CHARACTERS].AddPhrases(ch.Alternatives); }
 
             AddAction(MODE_CHARACTERS,
-                            ACTION_STOP_LISTENING,
-                            ACTION_STOP_DICTATING,
-                            ACTION_ENTER,
-                            ACTION_BACKSPACE
+                            ACTION_STOP_DICTATING
                             );
             #endregion
-
-            modes[MODE_WORDS] = new RecognitionMode(MODE_WORDS, 0.9);
+            #region WORDS
+            modes[MODE_WORDS] = new RecognitionMode(MODE_WORDS, 0.8);
             AddAction(MODE_WORDS,
-                            ACTION_STOP_LISTENING,
                             ACTION_STOP_DICTATING,
                             ACTION_DELETE_LAST
                             );
+            #endregion
+            #region IDLE
+            modes[MODE_IDLE] = new RecognitionMode(MODE_IDLE, 0.9, ACTION_START_LISTENING.Alternatives);
+            #endregion
+            #region Load common actions to all modes except for IDLE
+            for (int i = 1; i < modes.Length; i++)
+            {
+                AddAction(i,
+                            ACTION_STOP_LISTENING,
 
-            modes[MODE_IDLE] = new RecognitionMode(MODE_IDLE, 0.9);
-            AddAction(MODE_IDLE, ACTION_START_LISTENING);
+                            ACTION_ENTER,
+                            ACTION_BACKSPACE,
+                            ACTION_DELETE,
+                            ACTION_SELECT_ALL,
+                            ACTION_DELETE_ALL,
+
+                            ACTION_LEFT,
+                            ACTION_RIGHT,
+                            ACTION_UP,
+                            ACTION_DOWN
+                            );
+            }
+            #endregion
         }
         #endregion
         #region void AddAction(int modeID, params MessiahAction[] actArr)
@@ -249,16 +300,52 @@ namespace Messiah
             textBoxInput.Text = strToDisplay;
         }
         #endregion
-
-        private MessiahAction GetAction(string input)
-        {
-            return ACTION_NULL;
-        }
-
+        #region bool IsAction(string str, MessiahAction act)
+        /// <summary>
+        /// Decides if the input string represents specific action or not.
+        /// </summary>
+        /// <param name="str">input string</param>
+        /// <param name="act">action to be checked</param>
+        /// <returns>Returns true if input string belongs to the action.</returns>
         private bool IsAction(string str, MessiahAction act)
         {
             return NatiStringTools.ArrayContains(act.Alternatives, str, false);
         }
+        #endregion
+
+        #region void SelectAll()
+        /// <summary>
+        /// Selects all the text within active element.
+        /// </summary>
+        private void SelectAll()
+        {
+            NatiKeyboard.Down(Keys.LControlKey);
+            NatiKeyboard.Press(Keys.A);
+            NatiKeyboard.Up(Keys.LControlKey);
+        }
+        #endregion
+        #region void OpenNewTab()
+        /// <summary>
+        /// Opens a new browser tab.
+        /// </summary>
+        private void OpenNewTab()
+        {
+            NatiKeyboard.Down(Keys.LControlKey);
+            NatiKeyboard.Press(Keys.T);
+            NatiKeyboard.Up(Keys.LControlKey);
+        }
+        #endregion
+        #region void SwitchTab()
+        /// <summary>
+        /// Switches to next browser tab.
+        /// </summary>
+        private void SwitchTab()
+        {
+            NatiKeyboard.Down(Keys.LControlKey);
+            NatiKeyboard.Press(Keys.Tab);
+            NatiKeyboard.Up(Keys.LControlKey);
+        }
+        #endregion
 
         #region void Process(string input)
         /// <summary>
@@ -267,58 +354,144 @@ namespace Messiah
         /// <param name="input">user input string</param>
         private void Process(string input)
         {
-            // Global actions (independent on active mode)
-            if(mode != MODE_IDLE)
+            if (mode != MODE_IDLE)
             {
-                if (IsAction(input, ACTION_ENTER))
-                    NatiKeyboard.Press(Keys.Enter);
-            }
-
-            if(mode == MODE_BROWSER)
-            {
+                #region Global actions (independent on active mode)
                 if (IsAction(input, ACTION_STOP_LISTENING))
                     LoadRecognitionMode(MODE_IDLE);
-                else if (IsAction(input, ACTION_DICTATE_CHARACTERS))
-                    LoadRecognitionMode(MODE_CHARACTERS);
-                else if (IsAction(input, ACTION_DICTATE_WORDS))
-                    LoadRecognitionMode(MODE_WORDS);
-            }
-            else if(mode == MODE_CHARACTERS)
-            {
-                if (IsAction(input, ACTION_STOP_DICTATING))
-                    LoadRecognitionMode(MODE_BROWSER);
+                else if (IsAction(input, ACTION_ENTER))
+                    NatiKeyboard.Press(Keys.Enter);
                 else if (IsAction(input, ACTION_BACKSPACE))
                     NatiKeyboard.Press(Keys.Back);
+                else if (IsAction(input, ACTION_DELETE))
+                    NatiKeyboard.Press(Keys.Delete);
+                else if (IsAction(input, ACTION_SELECT_ALL))
+                    SelectAll();
+                else if (IsAction(input, ACTION_DELETE_ALL))
+                {
+                    SelectAll();
+                    NatiKeyboard.Press(Keys.Delete);
+                }
+                else if (IsAction(input, ACTION_LEFT))
+                    NatiKeyboard.Press(Keys.Left);
+                else if (IsAction(input, ACTION_RIGHT))
+                    NatiKeyboard.Press(Keys.Right);
+                else if (IsAction(input, ACTION_UP))
+                    NatiKeyboard.Press(Keys.Up);
+                else if (IsAction(input, ACTION_DOWN))
+                    NatiKeyboard.Press(Keys.Down);
+                #endregion
                 else
                 {
-                    foreach (Character ch in CHARACTERS)
+                    #region BROWSER
+                    if (mode == MODE_BROWSER)
                     {
-                        if (NatiStringTools.ArrayContains(ch.Alternatives, input, false))
+                        if (IsAction(input, ACTION_DICTATE_CHARACTERS))
+                            LoadRecognitionMode(MODE_CHARACTERS);
+                        else if (IsAction(input, ACTION_DICTATE_WORDS))
+                            LoadRecognitionMode(MODE_WORDS);
+                        else if (IsAction(input, ACTION_ELEMENT_PREVIOUS))
                         {
-                            SendKeys.SendWait(ch.CharString);
-                            break;
+                            NatiKeyboard.Down(Keys.LShiftKey);
+                            NatiKeyboard.Press(Keys.Tab);
+                            NatiKeyboard.Up(Keys.LShiftKey);
+                        }
+                        else if (IsAction(input, ACTION_ELEMENT_NEXT))
+                            NatiKeyboard.Press(Keys.Tab);
+                        else if (IsAction(input, ACTION_PAGE_BACK))
+                        {
+                            NatiKeyboard.Down(System.Windows.Input.Key.LeftAlt);
+                            NatiKeyboard.Press(Keys.Left);
+                            NatiKeyboard.Up(System.Windows.Input.Key.LeftAlt);
+                        }
+                        else if (IsAction(input, ACTION_PAGE_FORWARD))
+                        {
+                            NatiKeyboard.Down(System.Windows.Input.Key.LeftAlt);
+                            NatiKeyboard.Press(Keys.Right);
+                            NatiKeyboard.Up(System.Windows.Input.Key.LeftAlt);
+                        }
+                        else if (IsAction(input, ACTION_START_BROWSER))
+                            System.Diagnostics.Process.Start("chrome");
+                        else if (IsAction(input, ACTION_TAB_NEW))
+                            OpenNewTab();
+                        else if (IsAction(input, ACTION_TAB_CLOSE))
+                        {
+                            NatiKeyboard.Down(Keys.LControlKey);
+                            NatiKeyboard.Press(Keys.W);
+                            NatiKeyboard.Up(Keys.LControlKey);
+                        }
+                        else if (IsAction(input, ACTION_TAB_REOPEN))
+                        {
+                            NatiKeyboard.Down(Keys.LShiftKey);
+                            OpenNewTab();
+                            NatiKeyboard.Up(Keys.LShiftKey);
+                        }
+                        else if (IsAction(input, ACTION_TAB_PREVIOUS))
+                        {
+                            NatiKeyboard.Down(Keys.LShiftKey);
+                            SwitchTab();
+                            NatiKeyboard.Up(Keys.LShiftKey);
+                        }
+                        else if (IsAction(input, ACTION_TAB_NEXT))
+                            SwitchTab();
+                        else if (IsAction(input, ACTION_RELOAD_PAGE))
+                            NatiKeyboard.Press(Keys.F5);
+                        else if (IsAction(input, ACTION_SCROLL_UP))
+                            NatiKeyboard.Press(Keys.PageUp);
+                        else if (IsAction(input, ACTION_SCROLL_DOWN))
+                            NatiKeyboard.Press(Keys.PageDown);
+                    }
+                    #endregion
+                    #region CHARACTERS
+                    else if (mode == MODE_CHARACTERS)
+                    {
+                        if (IsAction(input, ACTION_STOP_DICTATING))
+                            LoadRecognitionMode(MODE_BROWSER);
+                        else
+                        {
+                            foreach (Character ch in CHARACTERS)
+                            {
+                                if (NatiStringTools.ArrayContains(ch.Alternatives, input, false))
+                                {
+                                    SendKeys.SendWait(ch.CharString);
+                                    return;
+                                }
+                            }
                         }
                     }
-                }
-            }
-            else if (mode == MODE_WORDS)
-            {
-                if (IsAction(input, ACTION_STOP_DICTATING))
-                    LoadRecognitionMode(MODE_BROWSER);
-                else if (IsAction(input, ACTION_DELETE_LAST))
-                {
+                    #endregion
+                    #region WORDS
+                    else if (mode == MODE_WORDS)
+                    {
+                        if (IsAction(input, ACTION_STOP_DICTATING))
+                            LoadRecognitionMode(MODE_BROWSER);
+                        else if (IsAction(input, ACTION_DELETE_LAST))
+                        {
+                            for (int i = 0; i < lastWordLength; i++)
+                            {
+                                NatiKeyboard.Press(Keys.Back);
+                            }
+                        }
+                        else
+                        {
+                            SendKeys.SendWait(input + " ");
+                            lastWordLength = input.Length + 1;
+                            return;
+                        }
 
-                }
-                else
-                {
-                    SendKeys.SendWait(input);
+                        // Make sure the word length is only stored after a word dictation
+                        lastWordLength = 0;
+                    }
+                    #endregion
                 }
             }
-            else if (mode == MODE_IDLE)
+            #region IDLE
+            else
             {
                 if (IsAction(input, ACTION_START_LISTENING))
                     LoadRecognitionMode(MODE_BROWSER);
             }
+            #endregion
         }
         #endregion
     }
