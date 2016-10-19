@@ -3,6 +3,7 @@ using System;
 using System.Text;
 using System.Windows;
 using System.Speech.Recognition;
+using System.Speech.Synthesis;
 using System.Windows.Forms;
 using NatiTools;
 #endregion
@@ -19,38 +20,53 @@ namespace Messiah
         private const int MODE_WORDS = 3;
         #endregion
         #region Actions
-        private MessiahAction ACTION_STOP_LISTENING     = new MessiahAction(1, "stop listening");                           // Switch to MODE_IDLE
-        private MessiahAction ACTION_START_LISTENING    = new MessiahAction(2, "start listening");                          // Switch back to MODE_BROWSER
-        private MessiahAction ACTION_DICTATE_CHARACTERS = new MessiahAction(3, "dictate", "dictate characters");            // Switch to MODE_CHARACTERS
-        private MessiahAction ACTION_DICTATE_WORDS      = new MessiahAction(4, "dictate words", "dictate sentences");       // Switch to MODE_WORDS
-        private MessiahAction ACTION_STOP_DICTATING     = new MessiahAction(5, "stop dictating");                           // Switch back to MODE_BROWSER
+        #region Global
+        private MessiahAction ACTION_EXIT               = new MessiahAction("exit", "exit Messiah", "quit", "quit Messiah");// Switch to MODE_IDLE
+        private MessiahAction ACTION_STOP_LISTENING     = new MessiahAction("stop listening");                              // Switch to MODE_IDLE
+        private MessiahAction ACTION_START_LISTENING    = new MessiahAction("start listening");                             // Switch back to MODE_BROWSER
+        private MessiahAction ACTION_DICTATE_CHARACTERS = new MessiahAction("dictate", "dictate characters");               // Switch to MODE_CHARACTERS
+        private MessiahAction ACTION_DICTATE_WORDS      = new MessiahAction("dictate words", "dictate sentences");          // Switch to MODE_WORDS
+        private MessiahAction ACTION_STOP_DICTATING     = new MessiahAction("stop dictating");                              // Switch back to MODE_BROWSER
 
-        private MessiahAction ACTION_ENTER              = new MessiahAction(21, "enter", "confirm");                        // Enter
-        private MessiahAction ACTION_BACKSPACE          = new MessiahAction(22, "backspace");                               // Backspace
-        private MessiahAction ACTION_DELETE             = new MessiahAction(23, "delete");                                  // Delete
-        private MessiahAction ACTION_SELECT_ALL         = new MessiahAction(24, "select all");                              // Ctrl+A
-        private MessiahAction ACTION_DELETE_ALL         = new MessiahAction(25, "delete all");                              // Ctrl+A and Delete
+        private MessiahAction ACTION_ENTER              = new MessiahAction("enter", "confirm");                            // Enter
+        private MessiahAction ACTION_BACKSPACE          = new MessiahAction("backspace");                                   // Backspace
+        private MessiahAction ACTION_DELETE             = new MessiahAction("delete");                                      // Delete
+        private MessiahAction ACTION_SELECT_ALL         = new MessiahAction("select all");                                  // Ctrl+A
+        private MessiahAction ACTION_DELETE_ALL         = new MessiahAction("delete all");                                  // Ctrl+A and Delete
 
-        private MessiahAction ACTION_LEFT               = new MessiahAction(31, "left");                                    // Press left arrow
-        private MessiahAction ACTION_RIGHT              = new MessiahAction(32, "right");                                   // Press right arrow
-        private MessiahAction ACTION_UP                 = new MessiahAction(33, "up");                                      // Press up arrow
-        private MessiahAction ACTION_DOWN               = new MessiahAction(34, "down");                                    // Press down arrow
+        private MessiahAction ACTION_LEFT               = new MessiahAction("left");                                        // Press left arrow
+        private MessiahAction ACTION_RIGHT              = new MessiahAction("right");                                       // Press right arrow
+        private MessiahAction ACTION_UP                 = new MessiahAction("up");                                          // Press up arrow
+        private MessiahAction ACTION_DOWN               = new MessiahAction("down");                                        // Press down arrow
+        #endregion
+        #region Browser
+        private MessiahAction ACTION_ELEMENT_PREVIOUS   = new MessiahAction("select previous", "previous element");         // Focus previous element
+        private MessiahAction ACTION_ELEMENT_NEXT       = new MessiahAction("select next", "next element");                 // Focus next element
+        private MessiahAction ACTION_PAGE_BACK          = new MessiahAction("page back", "go back", "previous page");       // Go to the previous page
+        private MessiahAction ACTION_PAGE_FORWARD       = new MessiahAction("page forward", "go forward", "next page");     // Go to the next page
+        private MessiahAction ACTION_START_BROWSER      = new MessiahAction("open browser", "start browser");               // Open new browser window
+        private MessiahAction ACTION_TAB_NEW            = new MessiahAction("new tab", "open new tab");                     // Open new tab
+        private MessiahAction ACTION_TAB_CLOSE          = new MessiahAction("close tab", "close active tab");               // Close active tab
+        private MessiahAction ACTION_TAB_REOPEN         = new MessiahAction("reopen tab", "open last closed tab");          // Open the most recently closed tab
+        private MessiahAction ACTION_TAB_PREVIOUS       = new MessiahAction("previous tab", "switch to previous tab");      // Open the most recently closed tab
+        private MessiahAction ACTION_TAB_NEXT           = new MessiahAction("next tab", "switch to next tab", "switch tab");// Open the most recently closed tab
+        private MessiahAction ACTION_RELOAD_PAGE        = new MessiahAction("reload page", "refresh page");                 // Reload the page in active tab
+        private MessiahAction ACTION_SCROLL_UP          = new MessiahAction("scroll up", "scroll up");                      // Scroll the page up
+        private MessiahAction ACTION_SCROLL_DOWN        = new MessiahAction("scroll down", "page down");                    // Scroll the page down
 
-        private MessiahAction ACTION_ELEMENT_PREVIOUS   = new MessiahAction(101, "select previous", "previous element");    // Focus previous element
-        private MessiahAction ACTION_ELEMENT_NEXT       = new MessiahAction(102, "select next", "next element");            // Focus next element
-        private MessiahAction ACTION_PAGE_BACK          = new MessiahAction(103, "page back", "go back", "previous page");  // Go to the previous page
-        private MessiahAction ACTION_PAGE_FORWARD       = new MessiahAction(104, "page forward", "go forward", "next page");// Go to the next page
-        private MessiahAction ACTION_START_BROWSER      = new MessiahAction(105, "open browser", "start browser");          // Open new browser window
-        private MessiahAction ACTION_TAB_NEW            = new MessiahAction(106, "new tab", "open new tab");                // Open new tab
-        private MessiahAction ACTION_TAB_CLOSE          = new MessiahAction(107, "close tab", "close active tab");          // Close active tab
-        private MessiahAction ACTION_TAB_REOPEN         = new MessiahAction(108, "reopen tab", "open last closed tab");     // Open the most recently closed tab
-        private MessiahAction ACTION_TAB_PREVIOUS       = new MessiahAction(109, "previous tab", "switch to previous tab"); // Open the most recently closed tab
-        private MessiahAction ACTION_TAB_NEXT           = new MessiahAction(110, "next tab", "switch to next tab", "switch tab"); // Open the most recently closed tab
-        private MessiahAction ACTION_RELOAD_PAGE        = new MessiahAction(111, "reload page", "refresh page");            // Reload the page in active tab
-        private MessiahAction ACTION_SCROLL_UP          = new MessiahAction(112, "scroll up", "scroll up");                 // Scroll the page up
-        private MessiahAction ACTION_SCROLL_DOWN        = new MessiahAction(113, "scroll down", "page down");               // Scroll the page down
+        private MessiahAction ACTION_MOUSE_MOVE_LEFT    = new MessiahAction("move left");                                   // Move the cursor to the left
+        private MessiahAction ACTION_MOUSE_MOVE_RIGHT   = new MessiahAction("move right");                                  // Move the cursor to the right
+        private MessiahAction ACTION_MOUSE_MOVE_UP      = new MessiahAction("move up");                                     // Move the cursor up
+        private MessiahAction ACTION_MOUSE_MOVE_DOWN    = new MessiahAction("move down");                                   // Move the cursor down
+        private MessiahAction ACTION_MOUSE_CLICK_LEFT   = new MessiahAction("click left", "left click");                    // Press the left mouse button
+        private MessiahAction ACTION_MOUSE_CLICK_RIGHT  = new MessiahAction("click right", "right click");                  // Press the right mouse button
+        private MessiahAction ACTION_MOUSE_CLICK_MIDDLE = new MessiahAction("click middle", "middle click", "scroll click");// Press the middle mouse button
 
-        private MessiahAction ACTION_DELETE_LAST        = new MessiahAction(301, "delete last", "delete recent");           // Delete the most recently written word
+        private MessiahAction ACTION_MOUSE_SPEED;
+        #endregion
+        #region Words
+        private MessiahAction ACTION_DELETE_LAST        = new MessiahAction("delete last", "delete recent");                // Delete the most recently written word
+        #endregion
         #endregion
         #region Characters
         private Character[] CHARACTERS = new Character[] {
@@ -86,12 +102,18 @@ namespace Messiah
                 new Character(">",  "left chevron", "more than", "higher than")
             };
         #endregion
+        #region Mouse Speed
+        private int[] INT_MOUSE_SPEEDS = { 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000 };
+        private string[] STRING_MOUSE_SPEED_ALTERNATIVES = { "mouse speed ", "cursor speed ", "cursor velocity " };
+        #endregion
         #endregion
         #region Variables
-        private SpeechRecognitionEngine recognizer = new SpeechRecognitionEngine();
+        private SpeechRecognitionEngine recognizer;
+        private SpeechSynthesizer synthesizer;
         private RecognitionMode[] modes = new RecognitionMode[4];
         private int mode = -1;
         private int lastWordLength = 0;
+        private int mouseSpeed = 20;
         #endregion
 
         #region Window Events
@@ -106,6 +128,26 @@ namespace Messiah
             recognizer.LoadGrammarCompleted += Recognizer_LoadGrammarCompleted;
             recognizer.SpeechRecognized += Recognizer_SpeechRecognized;
 
+            synthesizer = new SpeechSynthesizer();
+            synthesizer.SetOutputToDefaultAudioDevice();
+
+            #region Mouse Speed Action
+            
+            string[] strMouseSpeedAlternatives = new string[INT_MOUSE_SPEEDS.Length * STRING_MOUSE_SPEED_ALTERNATIVES.Length];
+
+            for (int i = 0; i < INT_MOUSE_SPEEDS.Length; i++)
+            {
+                int iPtr = i * STRING_MOUSE_SPEED_ALTERNATIVES.Length;
+
+                for (int j = 0; j < STRING_MOUSE_SPEED_ALTERNATIVES.Length; j++)
+                {
+                    strMouseSpeedAlternatives[iPtr + j] = STRING_MOUSE_SPEED_ALTERNATIVES[j] + INT_MOUSE_SPEEDS[i].ToString();
+                }
+            }
+
+            ACTION_MOUSE_SPEED = new MessiahAction(strMouseSpeedAlternatives);
+            #endregion
+
             PrepareModes();
             LoadRecognitionMode(MODE_IDLE);
         }
@@ -114,6 +156,10 @@ namespace Messiah
         {
             // Make sure the program doesn't continue listening after the window was closed
             recognizer.RecognizeAsyncCancel();
+
+            // Say goodbye to the user and cancer all other speaking
+            synthesizer.SpeakAsyncCancelAll();
+            synthesizer.Speak("Goodbye!");
         }
         #endregion
         #region SRE Events
@@ -160,7 +206,18 @@ namespace Messiah
                             ACTION_TAB_NEXT,
                             ACTION_RELOAD_PAGE,
                             ACTION_SCROLL_DOWN,
-                            ACTION_SCROLL_UP
+                            ACTION_SCROLL_UP,
+
+                            ACTION_MOUSE_MOVE_LEFT,
+                            ACTION_MOUSE_MOVE_RIGHT,
+                            ACTION_MOUSE_MOVE_UP,
+                            ACTION_MOUSE_MOVE_DOWN,
+
+                            ACTION_MOUSE_CLICK_LEFT,
+                            ACTION_MOUSE_CLICK_RIGHT,
+                            ACTION_MOUSE_CLICK_MIDDLE,
+
+                            ACTION_MOUSE_SPEED
                             );
             #endregion
             #region CHARACTERS
@@ -203,12 +260,13 @@ namespace Messiah
                             );
             #endregion
             #region IDLE
-            modes[MODE_IDLE] = new RecognitionMode(MODE_IDLE, 0.9, ACTION_START_LISTENING.Alternatives);
+            modes[MODE_IDLE] = new RecognitionMode(MODE_IDLE, 0.90, ACTION_START_LISTENING.Alternatives);
             #endregion
             #region Load common actions to all modes except for IDLE
             for (int i = 1; i < modes.Length; i++)
             {
                 AddAction(i,
+                            ACTION_EXIT,
                             ACTION_STOP_LISTENING,
 
                             ACTION_ENTER,
@@ -288,6 +346,35 @@ namespace Messiah
             recognizer.LoadGrammarAsync(new Grammar(new GrammarBuilder(new Choices(modes[sreMode].Phrases))));
             // Set the active mode to desired mode
             mode = sreMode;
+
+            if (synthesizer != null)
+            {
+                string strModeString = string.Empty;
+
+                switch(sreMode)
+                {
+                    case 0:
+                        strModeString = "idle";
+                        break;
+
+                    case 1:
+                        strModeString = "browser";
+                        break;
+
+                    case 2:
+                        strModeString = "character dictation";
+                        break;
+
+                    case 3:
+                        strModeString = "word dictation";
+                        break;
+
+                    default:
+                        break;
+                }
+
+                synthesizer.SpeakAsync(strModeString + " mode");
+            }
         }
         #endregion
         
@@ -311,6 +398,26 @@ namespace Messiah
         private bool IsAction(string str, MessiahAction act)
         {
             return NatiStringTools.ArrayContains(act.Alternatives, str, false);
+        }
+        #endregion
+        #region void FitPointOnScreen(ref System.Drawing.Point p)
+        /// <summary>
+        /// Move the Point p to fit within the screen boundaries.
+        /// </summary>
+        /// <param name="p">Point to move</param>
+        private void FitPointOnScreen(ref System.Drawing.Point p)
+        {
+            System.Drawing.Rectangle rectScreen = Screen.PrimaryScreen.Bounds;
+
+            if (p.X < rectScreen.Left)
+                p.X = rectScreen.Left;
+            else if (p.X > rectScreen.Right)
+                p.X = rectScreen.Right;
+
+            if (p.Y < rectScreen.Top)
+                p.Y = rectScreen.Top;
+            else if (p.Y > rectScreen.Bottom)
+                p.Y = rectScreen.Bottom;
         }
         #endregion
 
@@ -347,6 +454,24 @@ namespace Messiah
             NatiKeyboard.Up(Keys.LControlKey);
         }
         #endregion
+        #region void MoveCursor(int x, int y)
+        /// <summary>
+        /// Moves the cursor in desired direction.
+        /// </summary>
+        /// <param name="x">x direction</param>
+        /// <param name="y">y direction</param>
+        private void MoveCursor(int x, int y)
+        {
+            System.Drawing.Point pCursor = System.Windows.Forms.Cursor.Position;
+
+            pCursor.X += mouseSpeed * x;
+            pCursor.Y += mouseSpeed * y;
+
+            FitPointOnScreen(ref pCursor);
+
+            System.Windows.Forms.Cursor.Position = pCursor;
+        }
+        #endregion
 
         #region void Process(string input)
         /// <summary>
@@ -358,7 +483,9 @@ namespace Messiah
             if (mode != MODE_IDLE)
             {
                 #region Global actions (independent on active mode)
-                if (IsAction(input, ACTION_STOP_LISTENING))
+                if (IsAction(input, ACTION_EXIT))
+                    Close();
+                else if (IsAction(input, ACTION_STOP_LISTENING))
                     LoadRecognitionMode(MODE_IDLE);
                 else if (IsAction(input, ACTION_ENTER))
                     NatiKeyboard.Press(Keys.Enter);
@@ -441,6 +568,34 @@ namespace Messiah
                             NatiKeyboard.Press(Keys.PageUp);
                         else if (IsAction(input, ACTION_SCROLL_DOWN))
                             NatiKeyboard.Press(Keys.PageDown);
+                        else if (IsAction(input, ACTION_MOUSE_MOVE_LEFT))
+                            MoveCursor(-1, 0);
+                        else if (IsAction(input, ACTION_MOUSE_MOVE_RIGHT))
+                            MoveCursor(1, 0);
+                        else if (IsAction(input, ACTION_MOUSE_MOVE_UP))
+                            MoveCursor(0, -1);
+                        else if (IsAction(input, ACTION_MOUSE_MOVE_DOWN))
+                            MoveCursor(0, 1);
+                        else if (IsAction(input, ACTION_MOUSE_CLICK_LEFT))
+                            NatiMouse.LeftClick();
+                        else if (IsAction(input, ACTION_MOUSE_CLICK_RIGHT))
+                            NatiMouse.RightClick();
+                        else if (IsAction(input, ACTION_MOUSE_CLICK_MIDDLE))
+                            NatiMouse.MiddleClick();
+                        else if (IsAction(input, ACTION_MOUSE_SPEED))
+                        {
+                            string strMouseSpeed = input;
+
+                            foreach (string strAlternative in STRING_MOUSE_SPEED_ALTERNATIVES)
+                            {
+                                strMouseSpeed = strMouseSpeed.Replace(strAlternative, string.Empty);
+                            }
+
+                            if (!int.TryParse(strMouseSpeed, out mouseSpeed))
+                                mouseSpeed = 0;
+
+                            synthesizer.SpeakAsync(mouseSpeed.ToString() + " pixels");
+                        }
                     }
                     #endregion
                     #region CHARACTERS
