@@ -574,7 +574,7 @@ namespace Messiah
 
                                 switch(arrInput[0])
                                 {
-                                    case "top":
+                                    case "up":
                                         y = -1;
                                         break;
 
@@ -582,7 +582,7 @@ namespace Messiah
                                         x = 1;
                                         break;
 
-                                    case "bottom":
+                                    case "down":
                                         y = 1;
                                         break;
 
