@@ -54,15 +54,11 @@ namespace Messiah
         private MessiahAction ACTION_SCROLL_UP          = new MessiahAction("scroll up", "scroll up");                      // Scroll the page up
         private MessiahAction ACTION_SCROLL_DOWN        = new MessiahAction("scroll down", "page down");                    // Scroll the page down
 
-        private MessiahAction ACTION_MOUSE_MOVE_LEFT    = new MessiahAction("move left");                                   // Move the cursor to the left
-        private MessiahAction ACTION_MOUSE_MOVE_RIGHT   = new MessiahAction("move right");                                  // Move the cursor to the right
-        private MessiahAction ACTION_MOUSE_MOVE_UP      = new MessiahAction("move up");                                     // Move the cursor up
-        private MessiahAction ACTION_MOUSE_MOVE_DOWN    = new MessiahAction("move down");                                   // Move the cursor down
         private MessiahAction ACTION_MOUSE_CLICK_LEFT   = new MessiahAction("click left", "left click");                    // Press the left mouse button
         private MessiahAction ACTION_MOUSE_CLICK_RIGHT  = new MessiahAction("click right", "right click");                  // Press the right mouse button
         private MessiahAction ACTION_MOUSE_CLICK_MIDDLE = new MessiahAction("click middle", "middle click", "scroll click");// Press the middle mouse button
 
-        private MessiahAction ACTION_MOUSE_SPEED;
+        private MessiahAction ACTION_MOUSE_MOVE;
         #endregion
         #region Words
         private MessiahAction ACTION_DELETE_LAST        = new MessiahAction("delete last", "delete recent");                // Delete the most recently written word
@@ -102,9 +98,9 @@ namespace Messiah
                 new Character(">",  "left chevron", "more than", "higher than")
             };
         #endregion
-        #region Mouse Speed
+        #region Mouse Movement
         private int[] INT_MOUSE_SPEEDS = { 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000 };
-        private string[] STRING_MOUSE_SPEED_ALTERNATIVES = { "mouse speed ", "cursor speed ", "cursor velocity " };
+        private string[] STRING_MOUSE_DIRECTIONS = { "up", "right", "down", "left" };
         #endregion
         #endregion
         #region Variables
@@ -113,7 +109,6 @@ namespace Messiah
         private RecognitionMode[] modes = new RecognitionMode[4];
         private int mode = -1;
         private int lastWordLength = 0;
-        private int mouseSpeed = 20;
         #endregion
 
         #region Window Events
@@ -133,19 +128,19 @@ namespace Messiah
 
             #region Mouse Speed Action
             
-            string[] strMouseSpeedAlternatives = new string[INT_MOUSE_SPEEDS.Length * STRING_MOUSE_SPEED_ALTERNATIVES.Length];
+            string[] strMouseSpeedAlternatives = new string[INT_MOUSE_SPEEDS.Length * STRING_MOUSE_DIRECTIONS.Length];
 
             for (int i = 0; i < INT_MOUSE_SPEEDS.Length; i++)
             {
-                int iPtr = i * STRING_MOUSE_SPEED_ALTERNATIVES.Length;
+                int iPtr = i * STRING_MOUSE_DIRECTIONS.Length;
 
-                for (int j = 0; j < STRING_MOUSE_SPEED_ALTERNATIVES.Length; j++)
+                for (int j = 0; j < STRING_MOUSE_DIRECTIONS.Length; j++)
                 {
-                    strMouseSpeedAlternatives[iPtr + j] = STRING_MOUSE_SPEED_ALTERNATIVES[j] + INT_MOUSE_SPEEDS[i].ToString();
+                    strMouseSpeedAlternatives[iPtr + j] = "move " + STRING_MOUSE_DIRECTIONS[j] + " " + INT_MOUSE_SPEEDS[i].ToString();
                 }
             }
 
-            ACTION_MOUSE_SPEED = new MessiahAction(strMouseSpeedAlternatives);
+            ACTION_MOUSE_MOVE = new MessiahAction(strMouseSpeedAlternatives);
             #endregion
 
             PrepareModes();
@@ -208,16 +203,11 @@ namespace Messiah
                             ACTION_SCROLL_DOWN,
                             ACTION_SCROLL_UP,
 
-                            ACTION_MOUSE_MOVE_LEFT,
-                            ACTION_MOUSE_MOVE_RIGHT,
-                            ACTION_MOUSE_MOVE_UP,
-                            ACTION_MOUSE_MOVE_DOWN,
-
                             ACTION_MOUSE_CLICK_LEFT,
                             ACTION_MOUSE_CLICK_RIGHT,
                             ACTION_MOUSE_CLICK_MIDDLE,
 
-                            ACTION_MOUSE_SPEED
+                            ACTION_MOUSE_MOVE
                             );
             #endregion
             #region CHARACTERS
@@ -464,8 +454,8 @@ namespace Messiah
         {
             System.Drawing.Point pCursor = System.Windows.Forms.Cursor.Position;
 
-            pCursor.X += mouseSpeed * x;
-            pCursor.Y += mouseSpeed * y;
+            pCursor.X += x;
+            pCursor.Y += y;
 
             FitPointOnScreen(ref pCursor);
 
@@ -568,33 +558,47 @@ namespace Messiah
                             NatiKeyboard.Press(Keys.PageUp);
                         else if (IsAction(input, ACTION_SCROLL_DOWN))
                             NatiKeyboard.Press(Keys.PageDown);
-                        else if (IsAction(input, ACTION_MOUSE_MOVE_LEFT))
-                            MoveCursor(-1, 0);
-                        else if (IsAction(input, ACTION_MOUSE_MOVE_RIGHT))
-                            MoveCursor(1, 0);
-                        else if (IsAction(input, ACTION_MOUSE_MOVE_UP))
-                            MoveCursor(0, -1);
-                        else if (IsAction(input, ACTION_MOUSE_MOVE_DOWN))
-                            MoveCursor(0, 1);
                         else if (IsAction(input, ACTION_MOUSE_CLICK_LEFT))
                             NatiMouse.LeftClick();
                         else if (IsAction(input, ACTION_MOUSE_CLICK_RIGHT))
                             NatiMouse.RightClick();
                         else if (IsAction(input, ACTION_MOUSE_CLICK_MIDDLE))
                             NatiMouse.MiddleClick();
-                        else if (IsAction(input, ACTION_MOUSE_SPEED))
+                        else if (IsAction(input, ACTION_MOUSE_MOVE))
                         {
-                            string strMouseSpeed = input;
+                            string[] arrInput = input.Replace("move ", string.Empty).Split(' ');
 
-                            foreach (string strAlternative in STRING_MOUSE_SPEED_ALTERNATIVES)
+                            if(arrInput.Length == 2)
                             {
-                                strMouseSpeed = strMouseSpeed.Replace(strAlternative, string.Empty);
+                                int x = 0, y = 0, distance = 0;
+
+                                switch(arrInput[0])
+                                {
+                                    case "top":
+                                        y = -1;
+                                        break;
+
+                                    case "right":
+                                        x = 1;
+                                        break;
+
+                                    case "bottom":
+                                        y = 1;
+                                        break;
+
+                                    case "left":
+                                        x = -1;
+                                        break;
+
+                                    default:
+                                        break;
+                                }
+
+                                if(int.TryParse(arrInput[1], out distance))
+                                {
+                                    MoveCursor(x * distance, y * distance);
+                                }
                             }
-
-                            if (!int.TryParse(strMouseSpeed, out mouseSpeed))
-                                mouseSpeed = 0;
-
-                            synthesizer.SpeakAsync(mouseSpeed.ToString() + " pixels");
                         }
                     }
                     #endregion
